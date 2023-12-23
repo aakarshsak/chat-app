@@ -1,5 +1,6 @@
 import { connection } from "websocket";
 import { User } from "../models/User";
+import { authenticateUsingToken } from "../utils/auth";
 import { Store } from "./Store";
 
 export class UserManager {
@@ -9,8 +10,8 @@ export class UserManager {
     this.users = new Map<string, User>();
   }
 
-  init = (userId: string, name: string, conn: connection): void => {
-    this.users.set(userId, new User(name, userId, conn));
+  init = async (userId: string, conn: connection): Promise<void> => {
+    this.users.set(userId, new User(userId, conn));
   };
 
   getUser = (userId: string): User => {

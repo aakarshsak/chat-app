@@ -1,15 +1,18 @@
 import http from "http";
-import app from "./httpServer";
-import { init } from "./websocketServer";
+import app from "./servers/httpServer";
+import { config } from "dotenv";
+import { initiateSocketConnection } from "./servers/websocketServer";
+
+config();
 
 const PORT = 8080;
 
 const server = http.createServer();
 
-init(server);
+initiateSocketConnection(server);
 
 server.on("request", app);
 
 server.listen(PORT, () =>
-  console.log(new Date() + " Listening on port " + PORT)
+  console.log(new Date() + " Listening on port..." + PORT)
 );

@@ -5,12 +5,13 @@ import {
 } from "websocket";
 import { Server } from "http";
 
-import { UserManager } from "./store/UserManager";
-import { messageHandler } from "./messaging/message";
+import { UserManager } from "../store/UserManager";
+import { messageHandler } from "../messaging/message";
+import { authenticateUsingToken } from "../utils/auth";
 
 const userManager = new UserManager();
 
-export const init = (server: Server) => {
+export const initiateSocketConnection = (server: Server) => {
   const ws = new WebSocketServer({
     httpServer: server,
     autoAcceptConnections: false,
@@ -18,7 +19,7 @@ export const init = (server: Server) => {
 
   const originIsAllowed = (origin: string) => true;
 
-  ws.on("request", (req) => {
+  ws.on("request", async (req) => {
     console.log("Inside connect..");
     if (!originIsAllowed(req.origin)) {
       req.reject();
@@ -28,13 +29,19 @@ export const init = (server: Server) => {
       return;
     }
 
-    console.log(req.resourceURL.query);
-    const userId = req.resourceURL.query?.userId ?? "test123";
-
-    const connection = req.accept("echo-protocol", req.origin);
-
-    console.log(userId.toString());
-    userManager.init(userId.toString(), "", connection);
+    let connection: connection;
+    try {
+      const token = req.resourceURL.query?.token as string;
+      const userId = await authenticateUsingToken(token);
+      connection = req.accept(req.origin);
+      userManager.init(userId, connection);
+    } catch (err) {
+      req.reject();
+      console.log(
+        new Date() + " Connection from origin " + req.origin + " rejected."
+      );
+      return;
+    }
 
     console.log(new Date() + " Connection acccepted...");
     connection.on("message", function (message) {
